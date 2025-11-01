@@ -15,10 +15,24 @@ raw <- read_csv(csv, show_col_types = FALSE)
 ```{r}
 # Data Cleaning
 mh <- raw %>%
-mutate(
-Date = suppressWarnings(lubridate::dmy(Date)),
-Type = as.factor(Type),
-Regionname = as.factor(Regionname),
-Suburb = as.factor(Suburb),
-filter(!is.na(Price)))
+  mutate(
+    Date = suppressWarnings(lubridate::dmy(Date)),
+    Type = as.factor(Type),
+    Regionname = as.factor(Regionname),
+    Suburb = as.factor(Suburb)
+  ) %>%
+  filter(!is.na(Price))
+```
+
+\## One-way & Two-way contingency tables
+
+```{r}
+# One-way: count by Type
+one_way <- mh %>% count(Type, name = "n") %>% mutate(pct = n/sum(n))
+one_way
+
+
+# Two-way: Type by Region
+(two_way <- mh %>% count(Type, Regionname) %>% group_by(Regionname) %>%
+mutate(pct_in_region = n/sum(n)))
 ```
