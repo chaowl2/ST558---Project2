@@ -36,3 +36,83 @@ one_way
 (two_way <- mh %>% count(Type, Regionname) %>% group_by(Regionname) %>%
 mutate(pct_in_region = n/sum(n)))
 ```
+
+\## Numeric summaries of a quantitative variable across categories
+
+```{r}
+# Price across Type
+price_by_type <- mh %>%
+group_by(Type) %>%
+summarise(
+n = n(),
+mean = mean(Price, na.rm = TRUE),
+median = median(Price, na.rm = TRUE),
+sd = sd(Price, na.rm = TRUE),
+IQR = IQR(Price, na.rm = TRUE)
+)
+price_by_type
+```
+
+### \## Plots (≥ 6, with multivariate, faceting, and one novel type)
+
+```{r}
+# 1) Histogram of Price by Type (fill) + facet by Region (multivariate + faceting)
+mh %>%
+ggplot(aes(x = Price, fill = Type)) +
+geom_histogram(bins = 40, alpha = 0.7, position = "identity") +
+facet_wrap(~ Regionname, ncol = 3) +
+scale_x_continuous(labels = label_number_si()) +
+labs(title = "Price distribution by Type across Regions",
+x = "Price", y = "Count", fill = "Type")
+```
+
+```{r}
+# 2) Boxplot of Price by Type, colored by Type
+mh %>%
+ggplot(aes(x = Type, y = Price, fill = Type)) +
+geom_boxplot(outlier.alpha = 0.2) +
+scale_y_continuous(labels = label_number_si()) +
+labs(title = "Price by Dwelling Type", x = "Type", y = "Price")
+```
+
+```{r}
+# 3) Scatter: Rooms vs Price colored by Type with smooth
+mh %>%
+filter(!is.na(Distance)) %>%
+ggplot(aes(x = Distance, y = Price, color = Type)) +
+geom_point(alpha = 0.5) +
+geom_smooth(se = FALSE, method = "loess") +
+scale_y_continuous(labels = label_number_si()) +
+labs(title = "Price vs Distance by Type",
+x = "Distance", y = "Price")
+```
+
+```{r}
+# 4) Faceted scatter: Rooms vs Price, facet by Regionname
+mh %>%
+ggplot(aes(x = Rooms, y = Price, color = Type)) +
+geom_jitter(alpha = 0.3, width = 0.2, height = 0) +
+facet_wrap(~ Regionname) +
+scale_y_continuous(labels = label_number_si()) +
+labs(title = "Price vs Rooms by Region & Type", x = "Rooms", y = "Price")
+```
+
+```{r}
+# 5) Heatmap (novel): median price by Region x Type
+mh_heat <- mh %>% group_by(Regionname, Type) %>% summarise(med_price = median(Price, na.rm = TRUE), .groups = "drop")
+mh_heat %>%
+ggplot(aes(x = Type, y = Regionname, fill = med_price)) +
+geom_tile() +
+scale_fill_continuous(labels = label_number_si()) +
+labs(title = "Median Price Heatmap", x = "Type", y = "Region", fill = "Median Price")
+```
+
+```{r}
+# 6) Top suburbs by median price (bar)
+suburb_top15 <- mh %>% group_by(Suburb) %>% summarise(med = median(Price, na.rm = TRUE), n=n()) %>% filter(n>=50) %>% top_n(15, med) %>% arrange(med)
+suburb_top15 %>%
+ggplot(aes(x = med, y = reorder(Suburb, med))) +
+geom_col() +
+scale_x_continuous(labels = label_number_si()) +
+labs(title = "Top 15 Suburbs by Median Price (n≥50)", x = "Median Price", y = "Suburb")
+```
