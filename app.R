@@ -129,3 +129,15 @@ ui <- page_sidebar(
   ),
   theme = bs_theme(version = 5, bootswatch = "flatly")
 )
+
+
+# Data Download tab 
+output$tbl <- renderDT({
+  datatable(rv$data, options = list(scrollX = TRUE, pageLength = 10))
+})
+
+
+output$dl <- downloadHandler(
+  filename = function() paste0("melbourne_filtered_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv"),
+  content = function(file) readr::write_csv(rv$data, file)
+)
