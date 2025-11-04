@@ -130,7 +130,74 @@ ui <- page_sidebar(
   theme = bs_theme(version = 5, bootswatch = "flatly")
 )
 
-
+# Server
+server <- function(input, output, session) {
+  mh <- read_mh()
+  
+  
+  # Initialize select choices
+  updateSelectizeInput(session, "type", choices = sort(unique(na.omit(mh$Type))), server = TRUE)
+  updateSelectizeInput(session, "region", choices = sort(unique(na.omit(mh$Regionname))), server = TRUE)
+  
+  
+  num_vars <- intersect(num_vars_default, names(mh))
+  cat_vars <- intersect(cat_vars_default, names(mh))
+  
+  
+  updateSelectInput(session, "num1", choices = num_vars, selected = num_vars[1])
+  updateSelectInput(session, "num2", choices = num_vars, selected = ifelse(length(num_vars) > 1, num_vars[2], num_vars[1]))
+  
+  
+  updateSelectInput(session, "cat1", choices = cat_vars, selected = cat_vars[1])
+  updateSelectInput(session, "cat2", choices = c("(none)", cat_vars), selected = "(none)")
+  updateSelectInput(session, "num_summary", choices = num_vars, selected = num_vars[1])
+  updateSelectInput(session, "group_var", choices = cat_vars, selected = cat_vars[1])
+  
+  
+  # Dynamic sliders for numeric vars based on full data range
+  make_slider <- function(var) {
+    rng <- range(mh[[var]], na.rm = TRUE)
+    sliderInput(paste0(var, "_rng"), paste0(var, " range"), min = floor(rng[1]), max = ceiling(rng[2]), value = rng, step = diff(rng)/200)
+  }
+  
+  
+  output$num1_ui <- renderUI({ req(input$num1 %in% names(mh)); make_slider(input$num1) })
+  output$num2_ui <- renderUI({ req(input$num2 %in% names(mh)); make_slider(input$num2) })
+  
+  
+  # ReactiveValues to hold the filtered data; only update on Apply
+  rv <- reactiveValues(data = mh)
+  
+  
+  observeEvent(input$apply, ignoreInit = TRUE, {
+    d <- mh
+    
+    
+    # categorical filters
+    if (length(input$type)) d <- d %>% filter(is.na(Type) | Type %in% input$type)
+    if (length(input$region)) d <- d %>% filter(is.na(Regionname) | Regionname %in% input$region)
+    
+    
+    # numeric filters
+    if (!is.null(input$num1) && !is.null(input[[paste0(input$num1, "_rng")]])) {
+      rng <- input[[paste0(input$num1, "_rng")]]
+      d <- d %>% filter(is.na(.data[[input$num1]]) | between(.data[[input$num1]], rng[1], rng[2]))
+    }
+    if (!is.null(input$num2) && !is.null(input[[paste0(input$num2, "_rng")]])) {
+      rng <- input[[paste0(input$num2, "_rng")]]
+      d <- d %>% filter(is.na(.data[[input$num2]]) | between(.data[[input$num2]], rng[1], rng[2]))
+    }
+    
+    
+    # Handle empty result safely
+    if (nrow(d) == 0) {
+      showNotification("No rows match the selected filters. Showing original data.", type = "error")
+      rv$data <- mh
+    } else {
+      rv$data <- d
+      showNotification(paste("Rows after filtering:", scales::comma(nrow(d))), type = "message")
+    }
+  })
 # Data Download tab 
 output$tbl <- renderDT({
   datatable(rv$data, options = list(scrollX = TRUE, pageLength = 10))
