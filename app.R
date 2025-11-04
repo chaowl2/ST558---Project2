@@ -208,3 +208,37 @@ output$dl <- downloadHandler(
   filename = function() paste0("melbourne_filtered_", format(Sys.time(), "%Y%m%d_%H%M%S"), ".csv"),
   content = function(file) readr::write_csv(rv$data, file)
 )
+
+# Categorical summaries
+output$cat_table <- renderTable({
+  req(input$cat1 %in% names(rv$data))
+  d <- rv$data
+  
+  
+  if (isTruthy(input$cat2) && input$cat2 != "(none)") {
+    validate(need(input$cat2 != input$cat1, "Choose two different categorical variables."))
+    d %>% count(.data[[input$cat1]], .data[[input$cat2]], name = "n") %>%
+      group_by(.data[[input$cat1]]) %>% mutate(pct_row = n/sum(n)) %>% ungroup()
+  } else {
+    d %>% count(.data[[input$cat1]], name = "n") %>% mutate(pct = n/sum(n))
+  }
+})
+
+
+# Numeric summaries
+output$num_table <- renderTable({
+  req(input$num_summary %in% names(rv$data), input$group_var %in% names(rv$data))
+  rv$data %>% group_by(.data[[input$group_var]]) %>%
+    summarise(
+      n = dplyr::n(),
+      mean = mean(.data[[input$num_summary]], na.rm = TRUE),
+      median = median(.data[[input$num_summary]], na.rm = TRUE),
+      sd = sd(.data[[input$num_summary]], na.rm = TRUE),
+      IQR = IQR(.data[[input$num_summary]], na.rm = TRUE),
+      .groups = "drop"
+    ) %>% arrange(desc(n))
+})
+}
+
+
+shinyApp(ui, server)
