@@ -63,7 +63,7 @@ ui <- page_sidebar(
                   tags$hr(),
                   h3("Using the Sidebar"),
                   tags$ol(
-                    tags$li("Choose Type and Region filters (or leave empty for all)."),
+                    tags$li("Choose Type and Region filters."),
                     tags$li("Pick up to two numeric variables; sliders appear so you can set ranges."),
                     tags$li("Click ", strong("Apply Filters"), " to update the app.")
                   )
