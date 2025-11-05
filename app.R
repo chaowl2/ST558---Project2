@@ -10,7 +10,7 @@ library(bslib)
 num_vars_default <- c("Price", "Rooms", "Distance", "Landsize", "Propertycount")
 cat_vars_default <- c("Type", "Regionname", "Method", "SellerG", "Postcode")
 
-read_mh <- function(path = "MELBOURNE_HOUSE_PRICES_LESS.CSV") {
+read_mh <- function(path = "MELBOURNE_HOUSE_PRICES_LESS.csv") {
   req(file.exists(path))
   raw <- readr::read_csv(path, show_col_types = FALSE)
   raw %>% mutate(
