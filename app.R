@@ -57,7 +57,8 @@ ui <- page_sidebar(
                   p("Explore the Melbourne Housing Market dataset. Use the sidebar to subset by dwelling type, region, and numeric ranges, then view tables and plots."),
                   tags$ul(
                     tags$li(strong("Data:"), " Kaggle – Melbourne Housing Market"),
-                    tags$li(strong("Tabs:"), " Data Download (table + CSV download), Data Exploration (summaries + plots)")
+                    tags$li(strong("Tabs:"), " Data Download (table + CSV download), Data Exploration (summaries + plots)"),
+                    p("Created by Derek Chao")
                   ),
                   tags$img(src = "melbourne.jpg", width = "100%", style = "max-width:720px; border-radius:12px; margin-top:12px;"),
                   tags$hr(),
