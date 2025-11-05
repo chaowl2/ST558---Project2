@@ -3,7 +3,7 @@
 
 An interactive Shiny app to explore the **Melbourne Housing Market** dataset. Use the sidebar to subset by region and dwelling type, set numeric ranges (e.g., price), then explore the data via tables and plots. You can also download the (possibly subsetted) data.
 
-**Live app:** (add after deploying) 
+**Live app:** https://chaowl.shinyapps.io/project2/
 
 ## Data Source
 - Kaggle: *Melbourne Housing Market* (credit: Anthony Pino)

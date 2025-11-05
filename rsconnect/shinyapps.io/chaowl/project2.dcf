@@ -5,6 +5,6 @@ account: chaowl
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 15969730
-bundleId: 11132603
+bundleId: 11132741
 url: https://chaowl.shinyapps.io/project2/
 version: 1
