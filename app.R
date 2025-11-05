@@ -7,8 +7,8 @@ library(shinycssloaders)
 library(bslib)
 
 # Helpers
-num_vars_default <- c("Price", "Rooms", "Distance", "Landsize", "YearBuilt", "Propertycount")
-cat_vars_default <- c("Type", "Regionname", "Method", "SellerG")
+num_vars_default <- c("Price", "Rooms", "Distance", "Landsize", "Propertycount")
+cat_vars_default <- c("Type", "Regionname", "Method", "SellerG", "Postcode")
 
 read_mh <- function(path = "MELBOURNE_HOUSE_PRICES_LESS.CSV") {
   req(file.exists(path))
@@ -238,6 +238,81 @@ output$num_table <- renderTable({
       .groups = "drop"
     ) %>% arrange(desc(n))
 })
+# Plot UI 
+output$plot_ui <- renderUI({
+  d <- rv$data
+  num_choices <- names(d)[map_lgl(d, is.numeric)]
+  cat_choices <- names(d)[map_lgl(d, ~is.factor(.x) || is.character(.x))]
+  
+  
+  switch(input$plot_type,
+         hist = tagList(
+           selectInput("p_num", "Numeric", choices = num_choices, selected = intersect(c("Price"), num_choices)[1]),
+           selectInput("p_fill", "Fill (categorical)", choices = c(None = "(none)", cat_choices), selected = intersect(c("Type"), cat_choices)[1])
+         ),
+         box = tagList(
+           selectInput("p_y", "Y (numeric)", choices = num_choices, selected = intersect(c("Price"), num_choices)[1]),
+           selectInput("p_x", "X (categorical)", choices = cat_choices, selected = intersect(c("Type"), cat_choices)[1])
+         ),
+         scatter = tagList(
+           selectInput("p_xn", "X (numeric)", choices = num_choices, selected = intersect(c("Distance","Rooms"), num_choices)[1]),
+           selectInput("p_yn", "Y (numeric)", choices = num_choices, selected = intersect(c("Price"), num_choices)[1]),
+           selectInput("p_col", "Color (categorical)", choices = c(None = "(none)", cat_choices), selected = intersect(c("Type"), cat_choices)[1])
+         ),
+         f_scatter = tagList(
+           selectInput("p_xn2", "X (numeric)", choices = num_choices, selected = intersect(c("Rooms"), num_choices)[1]),
+           selectInput("p_yn2", "Y (numeric)", choices = num_choices, selected = intersect(c("Price"), num_choices)[1]),
+           selectInput("p_col2", "Color (categorical)", choices = c(None = "(none)", cat_choices), selected = intersect(c("Type"), cat_choices)[1]),
+           selectInput("p_facet", "Facet (categorical)", choices = cat_choices, selected = intersect(c("Regionname"), cat_choices)[1])
+         ),
+         heat = tagList(
+           helpText("Median Price by Region x Type"),
+           p("Variables are fixed to Regionname (rows), Type (columns), median(Price).")
+         )
+  )
+})
+
+# Plot render
+output$plot <- renderPlot({
+  d <- rv$data
+  req(nrow(d) > 0)
+  
+  
+  switch(input$plot_type,
+         hist = {
+           req(input$p_num)
+           g <- ggplot(d, aes(x = .data[[input$p_num]])) + geom_histogram(bins = 40)
+           if (!is.null(input$p_fill) && input$p_fill != "(none)") g <- g + aes(fill = .data[[input$p_fill]])
+           g + scale_x_continuous(labels = label_number_si()) + labs(x = input$p_num, y = "Count")
+         },
+         box = {
+           req(input$p_x, input$p_y)
+           ggplot(d, aes(x = .data[[input$p_x]], y = .data[[input$p_y]], fill = .data[[input$p_x]])) +
+             geom_boxplot(outlier.alpha = 0.2) + scale_y_continuous(labels = label_number_si()) +
+             labs(x = input$p_x, y = input$p_y)
+         },
+         scatter = {
+           req(input$p_xn, input$p_yn)
+           g <- ggplot(d, aes(x = .data[[input$p_xn]], y = .data[[input$p_yn]])) + geom_point(alpha = 0.5)
+           if (!is.null(input$p_col) && input$p_col != "(none)") g <- g + aes(color = .data[[input$p_col]])
+           g + scale_y_continuous(labels = label_number_si()) + labs(x = input$p_xn, y = input$p_yn)
+         },
+         f_scatter = {
+           req(input$p_xn2, input$p_yn2, input$p_facet)
+           g <- ggplot(d, aes(x = .data[[input$p_xn2]], y = .data[[input$p_yn2]])) + geom_point(alpha = 0.4)
+           if (!is.null(input$p_col2) && input$p_col2 != "(none)") g <- g + aes(color = .data[[input$p_col2]])
+           g + facet_wrap(as.formula(paste("~", input$p_facet))) + scale_y_continuous(labels = label_number_si()) +
+             labs(x = input$p_xn2, y = input$p_yn2)
+         },
+         heat = {
+           d %>% group_by(Regionname, Type) %>% summarise(med_price = median(Price, na.rm = TRUE), .groups = "drop") %>%
+             ggplot(aes(x = Type, y = Regionname, fill = med_price)) + geom_tile() +
+             scale_fill_continuous(labels = label_number_si()) +
+             labs(x = "Type", y = "Region", fill = "Median Price")
+         }
+  )
+})
+
 }
 
 
